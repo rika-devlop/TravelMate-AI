@@ -1,0 +1,7 @@
+"Package","Version","Comment"
+"streamlit",">=1.26.0,<2.0.0","Web UI framework for the app"
+"google-genai",">=1.0.0,<2.0.0","Official Google Gen AI Python SDK (Gemini); replace older google-generativeai"
+"requests",">=2.31.0,<3.0.0","HTTP client for any REST calls"
+"python-dotenv",">=1.0.0,<2.0.0","Load GEMINI_API_KEY from a .env file"
+"pydantic",">=1.10.10,<2.0.0","Optional: data validation if you parse API responses"
+"tzlocal",">=4.2.1,<5.0.0","Optional: timezone helpers for duration calculations"
