@@ -136,6 +136,89 @@ def get_or_create_user(name, email):
 
 
 # ------------------------------------------------------------------
+# Usage Limit Management
+# ------------------------------------------------------------------
+DAILY_LIMIT = 5
+USAGE_LOG_FILE = "usage_log.json"
+
+
+def init_usage_log():
+    """Initialize usage log file if it doesn't exist"""
+    if not os.path.exists(USAGE_LOG_FILE):
+        with open(USAGE_LOG_FILE, "w", encoding="utf-8") as f:
+            json.dump({}, f)
+
+
+def get_today_date():
+    """Get today's date in YYYY-MM-DD format"""
+    return datetime.now().strftime("%Y-%m-%d")
+
+
+def get_user_usage_count(email_id, user_id):
+    """Get how many times a user has generated itineraries today"""
+    init_usage_log()
+
+    with open(USAGE_LOG_FILE, "r", encoding="utf-8") as f:
+        log = json.load(f)
+
+    today = get_today_date()
+    key = f"{email_id}_{today}"
+
+    return log.get(key, 0)
+
+
+def increment_usage_count(email_id, user_id):
+    """Increment daily usage count for user"""
+    init_usage_log()
+
+    with open(USAGE_LOG_FILE, "r", encoding="utf-8") as f:
+        log = json.load(f)
+
+    today = get_today_date()
+    key = f"{email_id}_{today}"
+
+    log[key] = log.get(key, 0) + 1
+
+    with open(USAGE_LOG_FILE, "w", encoding="utf-8") as f:
+        json.dump(log, f, indent=2)
+
+
+def is_user_eligible_for_generation(user_id, email_id):
+    """
+    Check if user can generate an itinerary today.
+    Users with ID < 100 have unlimited access.
+    Users with ID >= 100 have 5 itineraries per day limit.
+    """
+    try:
+        user_id_int = int(user_id)
+    except:
+        return True
+
+    # Users with ID < 100 have unlimited access
+    if user_id_int < 100:
+        return True
+
+    # Users with ID >= 100 have daily limit
+    usage_count = get_user_usage_count(email_id, user_id)
+    return usage_count < DAILY_LIMIT
+
+
+def get_remaining_count(user_id, email_id):
+    """Get remaining itinerary generations for today"""
+    try:
+        user_id_int = int(user_id)
+    except:
+        return -1  # Unlimited
+
+    if user_id_int < 100:
+        return -1  # Unlimited (show as unlimited)
+
+    usage_count = get_user_usage_count(email_id, user_id)
+    remaining = DAILY_LIMIT - usage_count
+    return max(0, remaining)
+
+
+# ------------------------------------------------------------------
 # Helper: load / save / delete itinerary records
 # ------------------------------------------------------------------
 def get_user_dir(user_id):
@@ -394,6 +477,19 @@ with st.sidebar:
     st.markdown(f"## 👋 {st.session_state.preferred_name}")
     st.caption(f"ID: #{st.session_state.current_user_id} | {st.session_state.email_id}")
 
+    # SHOW USAGE LIMIT IF USER ID >= 100
+    try:
+        user_id_int = int(st.session_state.current_user_id)
+        if user_id_int >= 100:
+            remaining = get_remaining_count(st.session_state.current_user_id, st.session_state.email_id)
+            if remaining > 0:
+                st.success(f"📊 Itineraries left today: **{remaining}/{DAILY_LIMIT}**")
+            else:
+                st.error(f"🚫 Out of itineraries for today!")
+                st.info("Come back tomorrow for 5 more!")
+    except:
+        pass
+
     col1, col2 = st.columns(2)
     with col1:
         if st.button("New Chat", key="start_new_chat_btn", use_container_width=True):
@@ -405,12 +501,11 @@ with st.sidebar:
             st.rerun()
     with col2:
         if st.button("Logout", key="logout_btn", use_container_width=True):
-            # Clear query params
             st.query_params.clear()
-            # Reset everything
             for key in list(st.session_state.keys()):
                 del st.session_state[key]
             st.rerun()
+
 
     st.markdown("---")
     st.header("📍 Trip Details")
@@ -511,6 +606,16 @@ if submit:
     if not start_address or not dest_address:
         st.warning("Please enter both Starting Address and Destination Address!")
     else:
+        # CHECK DAILY LIMIT
+        user_id_int = int(st.session_state.current_user_id)
+
+        if user_id_int >= 100:  # Apply limit only to users with ID >= 100
+            if not is_user_eligible_for_generation(st.session_state.current_user_id, st.session_state.email_id):
+                st.error("🚫 You are out of itineraries, come back tomorrow!")
+                remaining = get_remaining_count(st.session_state.current_user_id, st.session_state.email_id)
+                st.info(f"Daily limit: {DAILY_LIMIT} itineraries. Remaining today: {remaining}")
+                st.stop()
+
         with st.spinner("Planning your trip..."):
             date_list = []
             for i in range(days):
@@ -606,8 +711,12 @@ FORMAT YOUR RESPONSE WITH CLEAR SECTIONS:
                     start_date_str=start_date.strftime("%b %d, %Y"),
                 )
 
+                # INCREMENT USAGE COUNT ONLY AFTER SUCCESSFUL GENERATION
+                increment_usage_count(st.session_state.email_id, st.session_state.current_user_id)
+
                 st.rerun()
 
             except Exception as e:
                 st.error(f"❌ Error: {str(e)}")
                 st.info("💡 Try again in a few moments, or check your API Key limits.")
+
