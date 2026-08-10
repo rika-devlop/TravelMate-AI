@@ -53,7 +53,7 @@ os.makedirs(BASE_PLAN_DIR, exist_ok=True)
 # ------------------------------------------------------------------
 # API client
 # ------------------------------------------------------------------
-API_KEY = "AQ.Ab8RN6LZW9aq5T4ysIPMnBSRI-25XaEb6VuXM8yhGCsP6cMFrg"
+API_KEY = "AQ.Ab8RN6LgBs4HSJFB6498NY-YZdDY3rDtcoH4qV10jYmdTUfxUQ"
 client = genai.Client(api_key=API_KEY)
 
 # ------------------------------------------------------------------
@@ -471,13 +471,47 @@ if not st.session_state.logged_in:
 # ------------------------------------------------------------------
 st.title("🌍 TravelMate AI Agent")
 st.markdown(f"### {st.session_state.greeting_text}")
+
+# Mobile notice
+st.markdown(
+    """
+    <style>
+    @media (max-width: 768px) {
+        .mobile-notice {
+            background-color: #f0f2f6;
+            padding: 8px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+            font-size: 14px;
+        }
+        .mobile-notice .arrow {
+            font-size: 18px;
+            margin: 0 5px;
+        }
+        .mobile-notice .highlight {
+            font-weight: bold;
+            color: #ff6b6b;
+        }
+    }
+    .mobile-notice { display: none; }
+    @media (max-width: 768px) { .mobile-notice { display: block; } }
+    </style>
+
+    <div class="mobile-notice">
+    📱 On mobile? Tap the <span class="arrow">⫷⫸</span> (double arrow) at the top-left to open the sidebar for trip input!
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+
 st.markdown("Plan your trip from start to destination!")
 
 with st.sidebar:
     st.markdown(f"## 👋 {st.session_state.preferred_name}")
     st.caption(f"ID: #{st.session_state.current_user_id} | {st.session_state.email_id}")
 
-    # SHOW USAGE LIMIT IF USER ID >= 100
+    # SHOW USAGE LIMIT IF USER ID >= 100 
     try:
         user_id_int = int(st.session_state.current_user_id)
         if user_id_int >= 100:
@@ -673,7 +707,7 @@ FORMAT YOUR RESPONSE WITH CLEAR SECTIONS:
 """
             try:
                 response = client.models.generate_content(
-                    model="gemini-2.0-flash",
+                    model="gemini-3.1-flash-lite",
                     contents=prompt
                 )
 
