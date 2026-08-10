@@ -8,6 +8,15 @@ import os
 import glob
 import random
 import csv
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
+
+# Get API key from environment
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+if not GEMINI_API_KEY:
+    raise ValueError("❌ GEMINI_API_KEY not found in .env file!")
 
 # ------------------------------------------------------------------
 # App config
@@ -53,9 +62,10 @@ os.makedirs(BASE_PLAN_DIR, exist_ok=True)
 # ------------------------------------------------------------------
 # API client
 # ------------------------------------------------------------------
-API_KEY = "AQ.Ab8RN6LgBs4HSJFB6498NY-YZdDY3rDtcoH4qV10jYmdTUfxUQ"
-client = genai.Client(api_key=API_KEY)
-
+#API_KEY = "xxxxx"
+#client = genai.Client(api_key=API_KEY)
+client = genai.Client(api_key=GEMINI_API_KEY)
+print(f"✅ API Key loaded: {GEMINI_API_KEY[:20]}...")
 # ------------------------------------------------------------------
 # Session state initialization
 # ------------------------------------------------------------------
@@ -511,7 +521,7 @@ with st.sidebar:
     st.markdown(f"## 👋 {st.session_state.preferred_name}")
     st.caption(f"ID: #{st.session_state.current_user_id} | {st.session_state.email_id}")
 
-    # SHOW USAGE LIMIT IF USER ID >= 100 
+    # SHOW USAGE LIMIT IF USER ID >= 100
     try:
         user_id_int = int(st.session_state.current_user_id)
         if user_id_int >= 100:
